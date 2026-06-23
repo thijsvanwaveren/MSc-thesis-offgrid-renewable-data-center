@@ -1,0 +1,2 @@
+Tier_A_MW,Tier_B1_MW,Tier_B2_MW,Reliability_A,Reliability_B1,Reliability_B2,LCOE_delivered,Curtailment_Annual_GWh,Energy_A_Annual_GWh,Energy_B1_Annual_GWh,Energy_B2_Annual_GWh,Energy_C_Annual_GWh,Total_Delivered_Annual_GWh,Objective_Value,Realized_Utilization
+5.0,5.0,23.0,100.0,100.0,100.0,54.92631661806565,227.1800894646805,43.8,43.8,201.48,0.0,289.08,155.052,0.55

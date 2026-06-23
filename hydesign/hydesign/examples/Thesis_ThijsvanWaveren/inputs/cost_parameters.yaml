@@ -1,0 +1,15 @@
+technologies:
+  wind:
+    capex: ... # New value per MW
+    opex: ...
+  bess:
+    efficiency_charge: 0.95
+    efficiency_discharge: 0.95
+    min_soc: 0.2
+    max_soc: 0.8
+
+[cite_start]penalties: # Order of magnitude values [cite: 589]
+  tier_a_unserved: 1e6
+  tier_b_shortfall: 1e5
+  curtailment: 1e3
+  battery_cycling: 10
