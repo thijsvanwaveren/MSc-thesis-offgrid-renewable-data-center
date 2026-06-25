@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon May 18 14:27:31 2026
-
-@author: thijs
-"""
-
 # -*- coding: utf-8 -*-
 """
-Section 3.5 - Economies of Scale in Revenue Generation (Stacked Area)
-Extracts the actual delivered Energy (GWh) from the 3D sweep CSVs, 
-calculates Gross Revenue by workload tier, and plots a continuous Stacked Area Chart.
+Visualizes total annual gross revenue by workload tier across varying data center capacities.
+
+Reads parameter sweep data to extract the delivered energy for optimal workload 
+mixes. Calculates tier-specific gross revenue and generates a stacked area chart 
+illustrating the absolute financial scale and composition of revenue as installed 
+IT capacity increases against a fixed hybrid power plant generation profile.
 """
 
 import pandas as pd
@@ -57,9 +54,7 @@ C_GRID = '#e0e0e0'
 # =============================================================================
 # 2. CSV DATA EXTRACTION
 # =============================================================================
-print("\n" + "=" * 60)
-print(" EXTRACTING REVENUE FROM OPTIMAL WORKLOAD MIXES ".center(60))
-print("=" * 60)
+print(" EXTRACTING REVENUE FROM OPTIMAL WORKLOAD MIXES ")
 
 revenue_data = {}
 
@@ -135,7 +130,7 @@ for i, cap in enumerate(capacities):
 # 3. Chart Formatting
 #ax.set_title("Annual Gross Revenue Breakdown by Workload Tier", fontsize=15, fontweight='bold', pad=20, color='#333333')
 ax.set_ylabel("Annual Gross Revenue (Millions €)", fontsize=12, fontweight='bold', color='#444444')
-ax.set_xlabel("Installed IT Capacity (MW)", fontsize=12, fontweight='bold', color='#444444')
+ax.set_xlabel("Installed IT Capacity (MW$_{\mathrm{IT}}$)", fontsize=12, fontweight='bold', color='#444444')
 
 ax.set_xlim(min(capacities), max(capacities))
 ax.set_xticks(capacities)
@@ -163,7 +158,4 @@ plt.subplots_adjust(bottom=0.25)
 # Save & Show
 save_path = os.path.join(BASE_FOLDER, 'revenue_by_tier_area_adjusted.svg')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
-print("\n" + "=" * 60)
-print(f"✅ Plot successfully extracted and saved to: {save_path}")
-print("=" * 60)
 plt.show()

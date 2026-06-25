@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-EMS-based generation duration curve for 8 MW Tier A IT load.
+Simulates and visualizes the generation duration curve for an 8 MW Tier A IT load.
 
-This script:
-- Runs the actual HyDesign EMS for an 8 MW Tier A IT workload.
-- Uses the EMS BESS dispatch instead of a manually modeled BESS.
-- Applies PUE through the EMS power balance.
-- Plots renewable generation allocation on a facility-side electrical power basis.
-
-Interpretation:
-- 8 MW Tier A = IT workload power.
-- With PUE = 1.15, this requires 9.2 MW facility-side electrical power.
-- The BESS charge/discharge and curtailment come directly from the EMS solution.
+Runs the HyDesign EMS strictly for an 8 MW Tier A (firm) workload. Evaluates the 
+facility-side power balance using a standard PUE and extracts the chronological 
+Battery Energy Storage System (BESS) dispatch. Outputs include a summary CSV of 
+the energy allocation and a smoothed duration curve highlighting BESS discharge.
 """
 
 import os
@@ -52,7 +46,7 @@ os.environ["REWARD_C2"] = "1.0"
 # =============================================================================
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-thesis_dir = C:\Users\thijs\Downloads\hydesign\hydesign\examples\Thesis_ThijsvanWaveren
+thesis_dir = r"C:\Users\thijs\Downloads\hydesign\hydesign\examples\Thesis_ThijsvanWaveren"
 
 ROOT_DIR = r"C:\Users\thijs\Downloads\hydesign"
 if sys.path[0] != ROOT_DIR:
@@ -412,20 +406,6 @@ def plot_smooth_after_bess_duration_curve(df):
         label="HPP output incl. BESS"
     )
 
-    # # Firm-load threshold
-    # ax.axhline(
-    #     y=firm_facility_mw,
-    #     color=C_LINE,
-    #     linestyle="--",
-    #     linewidth=2.2,
-    #     zorder=6,
-    #     label=f"Firm-load: {TIER_A_IT_MW:.0f} MW IT = {firm_facility_mw:.1f} MW facility"
-    # )
-
-    # -------------------------------------------------------------------------
-    # Annotation
-    # -------------------------------------------------------------------------
-
     ax.text(
         4100,
         firm_facility_mw - 8.5,
@@ -452,21 +432,6 @@ def plot_smooth_after_bess_duration_curve(df):
                 xytext=(8600, 45), textcoords='data',
                 arrowprops=dict(arrowstyle="->", color='red', lw=1.5, connectionstyle="arc3,rad=-0.2"),
                 fontsize=10, fontweight='bold', color='red', ha='center', zorder=7)
-    # Optional small annotation for the shift
-    # ax.text(
-    #     6100,
-    #     firm_facility_mw + 18,
-    #     "BESS flattens the distribution:\ncharges during surplus, discharges during deficits",
-    #     fontsize=10,
-    #     fontweight="bold",
-    #     color=C_AFTER,
-    #     ha="center",
-    #     va="center"
-    # )
-
-    # -------------------------------------------------------------------------
-    # Formatting
-    # -------------------------------------------------------------------------
 
     ax.set_xlabel(
         "Hours of the year",
@@ -497,19 +462,6 @@ def plot_smooth_after_bess_duration_curve(df):
 
     ax.tick_params(axis="both", colors="#333333", labelsize=11)
 
-    # # Secondary y-axis: IT-equivalent power
-    # secax = ax.secondary_yaxis(
-    #     "right",
-    #     functions=(lambda y: y / PUE, lambda y: y * PUE)
-    # )
-    # secax.set_ylabel(
-    #     "IT-equivalent workload power (MW$_{IT}$)",
-    #     fontsize=11,
-    #     fontweight="bold",
-    #     color="#444444"
-    # )
-    # secax.tick_params(axis="y", labelsize=10, colors="#444444")
-
     ax.legend(
         loc="upper right",
         frameon=True,
@@ -537,8 +489,7 @@ def plot_smooth_after_bess_duration_curve(df):
     print(f"Average after BESS:  {np.mean(df['After_BESS_MW']):.2f} MW")
     print(f"Average BESS net:    {np.mean(df['BESS_Net_MW']):.4f} MW")
 
-    plt.show()# MAIN
-# =============================================================================
+    plt.show()
 
 if __name__ == "__main__":
     df_results = run_tier_a_case()

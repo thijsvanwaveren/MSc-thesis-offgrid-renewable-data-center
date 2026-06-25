@@ -1,14 +1,18 @@
+# -*- coding: utf-8 -*-
 """
-Executes a 3D parameter sweep to find feasible workload mix combinations 
-for Tier A, Tier B1, and Tier B2 data center capacities.
+Executes a 3D parameter sweep to identify feasible workload mix combinations 
+across varying data center capacities.
 
-The sweep applies monotonic pruning to optimize computational time. It evaluates 
-combinations against a target reliability threshold and calculates the objective 
-value based on value-weighted delivered energy, although the objective value used 
-in the thesis is calculated in separate files:
-V = 1.0 * E_A + 0.7 * E_B1 + 0.4 * E_B2 + 0.1 * E_C
+Evaluates firm (Tier A), daily flexible (Tier B1), and weekly flexible (Tier B2) 
+workload allocations against a strict target reliability threshold. Applies 
+monotonic pruning rules to optimize computational time by systematically discarding 
+known infeasible search spaces. Outputs a CSV containing all viable boundary 
+configurations and their corresponding energy delivery metrics.
 
-Outputs are saved to a CSV file containing only the feasible combinations.
+Pruning rules applied:
+1. For fixed (A, B1): if B2 = b is infeasible, the B2 loop breaks.
+2. For fixed A: if B1 = b yields no feasible B2, the B1 loop breaks.
+3. If A = a is infeasible at B1 = 0 and B2 = 0, the A loop breaks.
 """
  
 import os
@@ -241,25 +245,19 @@ def run_3d_feasible_sweep(target_rel=99.9):
     feasible_results = []
     max_b1_ceiling = max(tier_b1_array)
 
-    print("\n" + "=" * 90)
-    print(f" STARTING SMART 3D FEASIBLE SWEEP ".center(90))
-    print(f" Target Reliability: {target_rel}% ".center(90))
-    print(f" IT Capacity Range: {MIN_IT_CAPACITY_MW} MW to {MAX_IT_CAPACITY_MW} MW ".center(90))
-    print("=" * 90)
-
     for a_mw in tier_a_array:
         # Pre-emptive check: If A alone exceeds max cap, break completely
         if a_mw > MAX_IT_CAPACITY_MW:
             break
             
-        print(f"\n--- Sweeping A = {a_mw:.1f} MW ---")
+        print(f"Sweeping A = {a_mw:.1f} MW")
         current_max_b1_for_this_a = -1
         any_viable_for_this_a = False
 
         for b1_mw in tier_b1_array:
             # PRUNING RULE A: frontier ceiling from previous A
             if b1_mw > max_b1_ceiling:
-                print(f"   Skip B1={b1_mw:.1f} (above ceiling {max_b1_ceiling:.1f})")
+                print(f"Skip B1={b1_mw:.1f} (above ceiling {max_b1_ceiling:.1f})")
                 continue
 
             # Pre-emptive check: If A + B1 already exceeds max cap, break B1 loop
@@ -371,7 +369,7 @@ def run_3d_feasible_sweep(target_rel=99.9):
                         f" Infeasible | RelA={rel_a:.3f}% | RelB1={rel_b1:.3f}% | RelB2={rel_b2:.3f}%"
                     )
                     # PRUNING RULE B: For fixed (A, B1), if B2=b fails reliability, all larger B2 will fail.
-                    print(f"      Break B2 loop for (A={a_mw:.1f}, B1={b1_mw:.1f})")
+                    print(f"Break B2 loop for (A={a_mw:.1f}, B1={b1_mw:.1f})")
                     break
 
             # End B2 loop
@@ -380,7 +378,7 @@ def run_3d_feasible_sweep(target_rel=99.9):
                 current_max_b1_for_this_a = b1_mw
             else:
                 # PRUNING RULE C
-                print(f"   Break B1 loop at A={a_mw:.1f} because no feasible B2 existed for B1={b1_mw:.1f}")
+                print(f"Break B1 loop at A={a_mw:.1f} because no feasible B2 existed for B1={b1_mw:.1f}")
                 break
 
         # End B1 loop
@@ -390,7 +388,7 @@ def run_3d_feasible_sweep(target_rel=99.9):
 
         if not any_viable_for_this_a:
             # PRUNING RULE D
-            print(f"\n FATAL: A={a_mw:.1f} failed across all bounds. Ending A sweeps.")
+            print(f"FATAL: A={a_mw:.1f} failed across all bounds. Ending A sweeps.")
             break
 
     # --------------------------------------------
@@ -399,15 +397,13 @@ def run_3d_feasible_sweep(target_rel=99.9):
     df_feasible = pd.DataFrame(feasible_results)
 
     if df_feasible.empty:
-        print("\n No feasible combinations found.")
+        print("No feasible combinations found.")
         return df_feasible
 
     df_feasible = df_feasible.sort_values(by="Objective_Value", ascending=False)
     csv_fn = os.path.join(current_dir, f'Feasible_3D_Sweep_Results_{target_rel:.1f}pct_IT{MAX_IT_CAPACITY_MW}.csv')
     df_feasible.to_csv(csv_fn, index=False)
 
-    print(f"\n Feasible combinations saved to: {csv_fn}")
-    print(f" Number of feasible combinations found: {len(df_feasible)}")
     return df_feasible 
  
 # =============================================================================
@@ -415,7 +411,7 @@ def run_3d_feasible_sweep(target_rel=99.9):
 # =============================================================================
  
 if __name__ == "__main__":
-    print("\n=== Data Center Hybrid Power Plant 3D Feasible Sweep ===")
+    print("Data Center Hybrid Power Plant 3D Feasible Sweep")
     try:
         user_input = input("Enter the target reliability percentage (e.g., 99.9, 95.0): ")
         target_reliability = float(user_input.strip())

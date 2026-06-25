@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Section 3.5.2 - Load vs. Generation Duration Curves (BESS Adjusted)
+Generates load and generation duration curve visualizations for the HPP-Data Center system.
 
-Updates:
-- Added a pure Raw Generation duration curve without workloads or BESS.
-- Customized the 8 MW Baseline plot to explicitly show Raw vs. Adjusted generation,
-  revealing statistical BESS charging (left) and discharging (right).
-- Shifts the 'Average served load' box up and left to avoid the generation curve.
+Processes chronological generation and operational data to visualize the statistical 
+distribution of renewable energy supply against various data center IT capacities. 
+Outputs include raw generation curves, Battery Energy Storage System (BESS) 
+adjusted baselines, and individual flexible capacity scenarios.
 """
-
 import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import matplotlib.patheffects as path_effects
+import matplotlib.colors as mcolors
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 
@@ -26,13 +25,16 @@ base_dir = r"C:\Users\thijs\Downloads\hydesign\hydesign\examples\Thesis_Thijsvan
 scripts_dir = os.path.join(base_dir, "scripts")
 vis_dir = os.path.join(base_dir, "Visualizations")
 
-# Split lists: Process ALL for individual, but only MASTER for the combined plot
+# Process all capacities for individual curves, but only several for combined plot
 ALL_IT_CAPACITIES_MW = [16.0, 20.0, 30.0, 40.0, 50.0, 75.0, 100.0]
 MASTER_IT_CAPACITIES_MW = [16.0, 30.0, 50.0, 75.0, 100.0]
 
 PUE = 1.15
-FIRM_TIER_A_IT = 8.0
+FIRM_TIER_A_IT = 8.0 # 
 FIRM_TIER_A_FACILITY = FIRM_TIER_A_IT * PUE
+
+# MORPH-LOCK SETTINGS: Ensure exact dimensions across all outputs
+GLOBAL_FIGSIZE = (11.0, 6.2) 
 
 C_GEN       = '#d35400'
 C_CURTAIL   = '#fdf2e9'
@@ -50,9 +52,6 @@ COLORS_IT_MASTER = [
     '#a1d9e7'  # 100 MW
 ]
 
-print("\n" + "=" * 80)
-print(" GENERATING BESS-ADJUSTED DURATION PLOTS ".center(80))
-print("=" * 80)
 
 # =============================================================================
 # 2. LOAD DATA
@@ -67,6 +66,9 @@ df_gen = pd.read_csv(gen_csv_path)
 available_re = df_gen['Wind'] + df_gen['Solar']
 raw_gen_sorted = np.sort(available_re.values)[::-1]
 x_pct = np.linspace(0, 100, len(raw_gen_sorted))
+
+# MORPH-LOCK SETTINGS: Absolute Y-Max for consistent axis scaling
+GLOBAL_YMAX = raw_gen_sorted.max() * 1.05 
 
 all_loads_sorted = {}
 all_net_gen_sorted = {} 
@@ -90,7 +92,7 @@ for cap_mw in ALL_IT_CAPACITIES_MW:
         else:
             all_net_gen_sorted[cap_mw] = raw_gen_sorted
     else:
-        print(f" ⚠️ Missing operation file for {cap_mw:.0f} MW_IT: {op_csv_path}")
+        print(f"Missing operation file for {cap_mw:.0f} MW_IT: {op_csv_path}")
 
 
 # =============================================================================
@@ -99,19 +101,19 @@ for cap_mw in ALL_IT_CAPACITIES_MW:
 
 def plot_raw_generation(raw_gen_sorted, x_pct):
     """Generates the introductory pure raw generation duration curve."""
-    fig, ax = plt.subplots(figsize=(10.5, 6.2), facecolor='white')
+    fig, ax = plt.subplots(figsize=GLOBAL_FIGSIZE, facecolor='white')
 
     ax.plot(x_pct, raw_gen_sorted, color=C_GEN, linewidth=2.5, linestyle='-', zorder=10)
     ax.fill_between(x_pct, 0, raw_gen_sorted, facecolor=C_GEN, alpha=0.1, zorder=1)
 
-    ax.set_ylabel("HPP generation / Facility power (MW$_{el}$)", fontsize=12, fontweight='bold', color='#222222')
+    ax.set_ylabel("HPP Power Output (MW)", fontsize=12, fontweight='bold', color='#222222')
     ax.set_xlabel("Percentage of the Year (%)", fontsize=12, fontweight='bold', color='#222222')
     ax.set_xlim(0, 100)
-    ax.set_ylim(0, raw_gen_sorted.max() * 1.05)
+    ax.set_ylim(0, GLOBAL_YMAX)
     ax.xaxis.set_major_formatter(mtick.PercentFormatter())
 
     secax = ax.secondary_yaxis('right', functions=(lambda y: y / PUE, lambda y: y * PUE))
-    secax.set_ylabel("IT-equivalent workload power (MW$_{IT}$)", fontsize=11, fontweight='bold', color='#222222')
+    secax.set_ylabel("Workload Power (MW$_{\mathrm{IT}}$)", fontsize=11, fontweight='bold', color='#222222')
     secax.tick_params(axis='y', colors='#222222', labelsize=10)
 
     ax.grid(axis='y', linestyle='-', alpha=0.2, color='#b0b0b0', zorder=0)
@@ -124,20 +126,20 @@ def plot_raw_generation(raw_gen_sorted, x_pct):
     ax.spines['bottom'].set_color('#222222')
 
     custom_legend = [
-        Line2D([0], [0], color=C_GEN, lw=2.5, linestyle='-', label='Renewable Generation (Wind + Solar)')
+        Line2D([0], [0], color=C_GEN, lw=2.5, linestyle='-', label='Wind + Solar Power Output')
     ]
     ax.legend(handles=custom_legend, loc='upper right', frameon=True, edgecolor='#e0e0e0', fontsize=10, facecolor='white', framealpha=0.9)
 
     plt.tight_layout()
     out_fn_svg = os.path.join(vis_dir, 'LoadvsGenerationDuration_RawGenOnly.svg')
     plt.savefig(out_fn_svg, dpi=300, bbox_inches='tight')
-    #plt.close(fig)
-    print(" ✅ Saved Raw Generation plot.")
+    ##plt.close(fig)
+    print("Saved Raw Generation plot.")
 
 
 def plot_8mw_baseline(raw_gen_sorted, adj_gen_sorted, x_pct):
-    """Bespoke plot for 8 MW to explicitly show BESS statistical transformation."""
-    fig, ax = plt.subplots(figsize=(10.5, 6.2), facecolor='white')
+    """Plot for 8 MW to explicitly show BESS statistical transformation."""
+    fig, ax = plt.subplots(figsize=GLOBAL_FIGSIZE, facecolor='white')
     cap_facility = FIRM_TIER_A_FACILITY
     
     # 1. Dark Blue Firm Baseline
@@ -164,20 +166,17 @@ def plot_8mw_baseline(raw_gen_sorted, adj_gen_sorted, x_pct):
     ax.plot(x_pct, raw_gen_sorted, color='#7f8c8d', linewidth=1.5, linestyle='--', zorder=5) 
     ax.plot(x_pct, adj_gen_sorted, color=C_GEN, linewidth=2.0, zorder=6)
 
-    # Load Reference Line & Text
+    # Load Reference Line (Text removed per request)
     ax.axhline(y=cap_facility, color=C_FIRM, linestyle=':', linewidth=1.6, alpha=0.95, zorder=6)
-    y_pos = cap_facility * 0.4
-    ax.text(2, y_pos, f"{FIRM_TIER_A_IT:.0f} MW$_{{IT}}$", color='white', fontweight='bold', 
-            fontsize=10, ha='left', va='center', zorder=8)
 
-    ax.set_ylabel("Net HPP Output / Facility Power (MW$_{el}$)", fontsize=12, fontweight='bold', color='#222222')
+    ax.set_ylabel("HPP Power Output (MW)", fontsize=12, fontweight='bold', color='#222222')
     ax.set_xlabel("Percentage of the Year (%)", fontsize=12, fontweight='bold', color='#222222')
     ax.set_xlim(0, 100)
-    ax.set_ylim(0, max(adj_gen_sorted.max(), raw_gen_sorted.max()) * 1.05)
+    ax.set_ylim(0, GLOBAL_YMAX)
     ax.xaxis.set_major_formatter(mtick.PercentFormatter())
 
     secax = ax.secondary_yaxis('right', functions=(lambda y: y / PUE, lambda y: y * PUE))
-    secax.set_ylabel("IT-equivalent workload power (MW$_{IT}$)", fontsize=11, fontweight='bold', color='#222222')
+    secax.set_ylabel("Workload Power (MW$_{\mathrm{IT}}$)", fontsize=11, fontweight='bold', color='#222222')
     secax.tick_params(axis='y', colors='#222222', labelsize=10)
 
     ax.grid(axis='y', linestyle='-', alpha=0.2, color='#b0b0b0', zorder=0)
@@ -187,12 +186,12 @@ def plot_8mw_baseline(raw_gen_sorted, adj_gen_sorted, x_pct):
     ax.spines['bottom'].set_linewidth(1.2); ax.spines['bottom'].set_color('#222222')
 
     custom_legend = [
-        Line2D([0], [0], color='#7f8c8d', lw=1.5, linestyle='--', label='Renewable Generation'),
-        Line2D([0], [0], color=C_GEN, lw=2.0, linestyle='-', label='Adjusted Generation (incl. BESS)'),
-        Patch(facecolor=C_CHARGE, edgecolor=C_CHARGE, alpha=0.6, hatch='\\\\', label='BESS Charging'),
-        Patch(facecolor=C_DISCHARGE, edgecolor=C_DISCHARGE, alpha=0.8, hatch='//', label='BESS Discharging'),
+        Line2D([0], [0], color='#7f8c8d', lw=1.5, linestyle='--', label='Wind + Solar Power Output'),
+        Line2D([0], [0], color=C_GEN, lw=2.0, linestyle='-', label='Dispatched Supply'),
+        Patch(facecolor=mcolors.to_rgba(C_CHARGE, 0.6), edgecolor=C_CHARGE, hatch='\\\\', label='BESS Charging'),
+        Patch(facecolor=mcolors.to_rgba(C_DISCHARGE, 0.8), edgecolor=C_DISCHARGE, hatch='//', label='BESS Discharging'),
         Patch(facecolor=C_CURTAIL, edgecolor='#e67e22', hatch='\\\\', label='Curtailed Power'),
-        Patch(facecolor=C_FIRM, alpha=0.9, label=f'Firm Tier A demand ({FIRM_TIER_A_IT} MW$_{{IT}}$ × PUE)')
+        Patch(facecolor=C_FIRM, alpha=0.9, label='Firm Tier A Load')
     ]
     ax.legend(handles=custom_legend, loc='upper right', frameon=True, edgecolor='#e0e0e0', fontsize=9, facecolor='white', framealpha=0.9)
 
@@ -200,19 +199,19 @@ def plot_8mw_baseline(raw_gen_sorted, adj_gen_sorted, x_pct):
     out_fn_svg = os.path.join(vis_dir, f'LoadvsGenerationDuration_{FIRM_TIER_A_IT:.0f}MWIT.svg')
     plt.savefig(out_fn_svg, dpi=300, bbox_inches='tight')
     #plt.close(fig)
-    print(f" ✅ Saved pure Baseline Net HPP plot for {FIRM_TIER_A_IT:.0f} MW_IT.")
+    print(f"Saved pure Baseline Net HPP plot for {FIRM_TIER_A_IT:.0f} MW_IT.")
 
 
 def plot_individual_capacity(cap_mw, load_facility, net_gen_sorted, x_pct):
     """Standard Flexible Duration Plot for >= 16 MW."""
-    fig, ax = plt.subplots(figsize=(10.5, 6.2), facecolor='white')
+    fig, ax = plt.subplots(figsize=GLOBAL_FIGSIZE, facecolor='white')
     cap_facility = cap_mw * PUE
     
     avg_load_facility = np.mean(load_facility)
     avg_load_it = avg_load_facility / PUE
 
     ax.axhline(y=avg_load_facility, color='black', linestyle='-.', linewidth=1.5, alpha=0.85, zorder=7)
-    ax.text(75, avg_load_facility + 20, f"Average served load\n{avg_load_it:.1f} MW$_{{IT}}$",
+    ax.text(82, avg_load_facility + 10, f"Average served load\n{avg_load_it:.1f}" + r' MW$_{\mathrm{IT}}$',
             fontsize=9, fontweight='bold', color='black', ha='left', va='bottom', zorder=9,
             bbox=dict(facecolor='white', edgecolor='black', alpha=0.75, pad=3))
 
@@ -229,20 +228,15 @@ def plot_individual_capacity(cap_mw, load_facility, net_gen_sorted, x_pct):
     ax.plot(x_pct, net_gen_sorted, color=C_GEN, linewidth=2.0, linestyle='--', zorder=10)
 
     ax.axhline(y=cap_facility, color=C_FLEX, linestyle=':', linewidth=1.6, alpha=0.95, zorder=6)
-    label_text = f"{cap_mw:.0f} MW$_{{IT}}$\n{cap_facility:.1f} MW$_{{el}}$ facility"
-    y_pos = cap_facility * 0.5
-        
-    ax.text(2, y_pos, label_text, color='white', fontweight='bold', fontsize=10, 
-            ha='left', va='center', zorder=8)
 
-    ax.set_ylabel("Net HPP Output / Facility Power (MW$_{el}$)", fontsize=12, fontweight='bold', color='#222222')
+    ax.set_ylabel("HPP Power Output (MW)", fontsize=12, fontweight='bold', color='#222222')
     ax.set_xlabel("Percentage of the Year (%)", fontsize=12, fontweight='bold', color='#222222')
     ax.set_xlim(0, 100)
-    ax.set_ylim(0, max(net_gen_sorted.max(), raw_gen_sorted.max()) * 1.05)
+    ax.set_ylim(0, GLOBAL_YMAX)
     ax.xaxis.set_major_formatter(mtick.PercentFormatter())
 
     secax = ax.secondary_yaxis('right', functions=(lambda y: y / PUE, lambda y: y * PUE))
-    secax.set_ylabel("IT-equivalent workload power (MW$_{IT}$)", fontsize=11, fontweight='bold', color='#222222')
+    secax.set_ylabel("Workload Power (MW$_{\mathrm{IT}}$)", fontsize=11, fontweight='bold', color='#222222')
     secax.tick_params(axis='y', colors='#222222', labelsize=10)
 
     ax.grid(axis='y', linestyle='-', alpha=0.2, color='#b0b0b0', zorder=0)
@@ -252,10 +246,10 @@ def plot_individual_capacity(cap_mw, load_facility, net_gen_sorted, x_pct):
     ax.spines['bottom'].set_linewidth(1.2); ax.spines['bottom'].set_color('#222222')
 
     custom_legend = [
-        Line2D([0], [0], color=C_GEN, lw=2.5, linestyle='--', label='Net HPP Output (Renewables + BESS)'),
+        Line2D([0], [0], color=C_GEN, lw=2.5, linestyle='--', label='Dispatched Supply'),
         Patch(facecolor=C_CURTAIL, edgecolor='#e67e22', hatch='\\\\', label='Curtailed Power'),
         Patch(facecolor=C_FLEX, alpha=0.65, label=f'Flexible demand (Tiers B & C)'),
-        Patch(facecolor=C_FIRM, alpha=0.9, label=f'Firm Tier A demand ({FIRM_TIER_A_IT} MW$_{{IT}}$ × PUE)')
+        Patch(facecolor=C_FIRM, alpha=0.9, label='Firm Tier A Load')
     ]
     ax.legend(handles=custom_legend, loc='upper right', frameon=True, edgecolor='#e0e0e0', fontsize=9, facecolor='white', framealpha=0.9)
 
@@ -263,7 +257,7 @@ def plot_individual_capacity(cap_mw, load_facility, net_gen_sorted, x_pct):
     out_fn_svg = os.path.join(vis_dir, f'LoadvsGenerationDuration_{cap_mw:.0f}MWIT.svg')
     plt.savefig(out_fn_svg, dpi=300, bbox_inches='tight')
     #plt.close(fig)
-    print(f" ✅ Saved individual Net HPP plot for {cap_mw:.0f} MW_IT.")
+    print(f"Saved individual Net HPP plot for {cap_mw:.0f} MW_IT.")
 
 
 # =============================================================================
@@ -271,7 +265,7 @@ def plot_individual_capacity(cap_mw, load_facility, net_gen_sorted, x_pct):
 # =============================================================================
 
 if all_loads_sorted:
-    fig, ax = plt.subplots(figsize=(12, 7), facecolor='white')
+    fig, ax = plt.subplots(figsize=GLOBAL_FIGSIZE, facecolor='white')
 
     for idx, cap in reversed(list(enumerate(MASTER_IT_CAPACITIES_MW))):
         if cap in all_loads_sorted:
@@ -283,22 +277,24 @@ if all_loads_sorted:
 
             lower_cap = MASTER_IT_CAPACITIES_MW[idx - 1] if idx > 0 else 0.0
             label_y = ((lower_cap * PUE) + (cap * PUE)) / 2
+            
+            # Using the safe raw string concatenation for the subscript formatting here as well
             ax.text(
-                4, label_y, f"{cap:.0f} MW$_{{IT}}$", color='white', fontweight='bold',
+                4, label_y, f"{cap:.0f}" + r' MW$_{\mathrm{IT}}$', color='white', fontweight='bold',
                 fontsize=10, ha='left', va='center', zorder=8,
                 path_effects=[path_effects.withStroke(linewidth=1, foreground='black', alpha=0.35)]
             )
 
     ax.plot(x_pct, raw_gen_sorted, color=C_GEN, linewidth=1.8, linestyle='--', zorder=10)
 
-    ax.set_ylabel("HPP generation / data center facility power (MW$_{el}$)", fontsize=12, fontweight='bold', color='#222222')
+    ax.set_ylabel("HPP Power Output (MW)", fontsize=12, fontweight='bold', color='#222222')
     ax.set_xlabel("Percentage of the Year (%)", fontsize=12, fontweight='bold', color='#222222')
     ax.set_xlim(0, 100)
-    ax.set_ylim(0, raw_gen_sorted.max() * 1.02)
+    ax.set_ylim(0, GLOBAL_YMAX)
     ax.xaxis.set_major_formatter(mtick.PercentFormatter())
 
     secax = ax.secondary_yaxis('right', functions=(lambda y: y / PUE, lambda y: y * PUE))
-    secax.set_ylabel("IT-equivalent workload power (MW$_{IT}$)", fontsize=11, fontweight='bold', color='#222222')
+    secax.set_ylabel("Workload Power (MW$_{\mathrm{IT}}$)", fontsize=11, fontweight='bold', color='#222222')
     secax.tick_params(axis='y', colors='#222222', labelsize=10)
 
     ax.grid(axis='y', linestyle='-', alpha=0.2, color='#b0b0b0', zorder=0)
@@ -308,8 +304,8 @@ if all_loads_sorted:
     ax.spines['bottom'].set_linewidth(1.2); ax.spines['bottom'].set_color('#222222')
 
     custom_legend = [
-        Line2D([0], [0], color=C_GEN, lw=2.5, linestyle='--', label='Renewable Generation (excl. BESS)'),
-        Patch(facecolor=COLORS_IT_MASTER[-1], alpha=0.65, label=f'Data center facility demand (IT load × {PUE:.2f})')
+        Line2D([0], [0], color=C_GEN, lw=2.5, linestyle='--', label='Wind + Solar Power Output'),
+        Patch(facecolor=COLORS_IT_MASTER[-1], alpha=0.65, label=f'Data Center Facility Demand')
     ]
     ax.legend(handles=custom_legend, loc='upper right', frameon=True, edgecolor='#e0e0e0', fontsize=10, facecolor='white', framealpha=0.9)
 
@@ -317,7 +313,7 @@ if all_loads_sorted:
     master_svg = os.path.join(vis_dir, 'Master_LoadvsGenerationDuration_RawGen.svg')
     plt.savefig(master_svg, dpi=300, bbox_inches='tight')
     #plt.close(fig)
-    print(" ✅ Saved Master Plot (Excluding 20 & 40 MW).")
+    print("Saved Master Plot (Excluding 20 & 40 MW).")
 
 
 # =========================================================================
@@ -325,7 +321,7 @@ if all_loads_sorted:
 # =========================================================================
 
 # 0. Generate the pure Raw Generation introductory plot
-print(" 🚀 Generating Intro Raw Generation Scenario...")
+print("Generating Intro Raw Generation Scenario...")
 plot_raw_generation(raw_gen_sorted=raw_gen_sorted, x_pct=x_pct)
 
 # A. Generate ALL individual plots for flexible loads
@@ -339,9 +335,9 @@ for cap_mw in ALL_IT_CAPACITIES_MW:
         )
 
 # B. Generate the pure "8 MW Baseline" Scenario with precise BESS Chronological Math
-print(" 🚀 Generating Baseline 8 MW Tier A Scenario (with Chronological BESS)...")
+print("Generating Baseline 8 MW Tier A Scenario (with Chronological BESS)...")
 
-# Simulate basic chronological 300MWh battery acting on an 8 MW load
+# # Simulate basic chronological 300MWh battery acting on an 8 MW load
 soc = 150.0
 adj_gen = np.zeros(len(available_re))
 charge_eff = np.sqrt(0.86)
@@ -358,16 +354,13 @@ for i in range(len(available_re)):
         dis_actual = min(deficit, 35.0, (soc - 30.0) * charge_eff) # 30MWh min SoC limit
         soc -= dis_actual / charge_eff
         adj_gen[i] = gen + dis_actual
+
         
 # Sort the Adjusted Generation independently to show statistical transformation
-adj_gen_sorted = np.sort(adj_gen)[::-1]
+    adj_gen_sorted = np.sort(adj_gen)[::-1]
 
 plot_8mw_baseline(
     raw_gen_sorted=raw_gen_sorted,
     adj_gen_sorted=adj_gen_sorted,
     x_pct=x_pct
 )
-
-print("\n" + "=" * 80)
-print(" All visualization completed successfully! ")
-print("=" * 80)

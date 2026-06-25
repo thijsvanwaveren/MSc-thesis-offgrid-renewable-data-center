@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu May 14 19:28:32 2026
-
-@author: thijs
-"""
-
 # -*- coding: utf-8 -*-
 """
-Section 3.6 - The Macroeconomic Trade-off
-Visualizes Curtailment vs. Unutilized IT Capacity to prove the 
-"Conservation of Inefficiency" and the location of the financial optimum.
+Visualizes the physical sizing trade-off between renewable energy curtailment and unutilized IT hardware.
+
+Plots the average curtailed power against the unutilized data center capacity 
+across varying installed IT capacities. This highlights the inherent structural dilemma 
+in off-grid operations: undersizing the data center results in significant renewable 
+energy waste, while oversizing results in stranded capital assets due to the variable 
+generation profile of the hybrid power plant.
 """
+
 
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as path_effects
@@ -49,38 +48,6 @@ ax.plot(IT_CAPACITIES_MW, curtailment_mw, color=C_CURTAIL, marker='o', markersiz
 ax.plot(IT_CAPACITIES_MW, unutilized_mw, color=C_UNUTIL, marker='s', markersize=8, 
         linewidth=3, label='Unutilized IT Capacity', zorder=4)
 
-# 2. Shading for Visual Weight (Optional but highly effective)
-# Fills the area under the curves with a very faint tint to imply "volume of waste"
-# ax.fill_between(IT_CAPACITIES_MW, 0, curtailment_mw, color=C_CURTAIL, alpha=0.05, zorder=1)
-# ax.fill_between(IT_CAPACITIES_MW, 0, unutilized_mw, color=C_UNUTIL, alpha=0.08, zorder=1)
-
-# 3. Add the "Kill-Shot" Insight: The Financial Optimum Line
-# optimum_mw = 50.0
-# ax.axvline(x=optimum_mw, color=C_FINANCE_OPT, linestyle='--', linewidth=2, zorder=2)
-
-# Annotate the Financial Optimum
-# ax.annotate('FINANCIAL\nOPTIMUM\n(50 MW)', 
-#             xy=(optimum_mw, 40), xytext=(optimum_mw - 12, 40),
-#             ha='center', va='center', fontsize=10, fontweight='bold', color=C_FINANCE_OPT,
-#             arrowprops=dict(arrowstyle='->', color=C_FINANCE_OPT, lw=1.5), path_effects=halo, zorder=5)
-
-# Annotate the Physical Intersection
-# ax.annotate('Physical Intersection\n(~57 MW)', 
-#             xy=(57, 15), xytext=(75, 18),
-#             ha='center', va='center', fontsize=10, fontweight='bold', color='#555555',
-#             arrowprops=dict(arrowstyle='-', color='#888888', lw=1.5), path_effects=halo, zorder=5)
-
-# 4. Selective Data Labels (Cleanliness over clutter)
-# for i, cap in enumerate(IT_CAPACITIES_MW):
-#     if cap in [16, 50, 100]:
-#         # Curtailment Labels
-#         ax.text(cap, curtailment_mw[i] + 2, f"{int(curtailment_mw[i])} MW", 
-#                 color=C_CURTAIL, fontweight='bold', ha='center', path_effects=halo, zorder=5)
-#         # Unutilized Labels
-#         # Adjust y-offset for the 16MW label to prevent overlap
-#         y_offset = -3 if cap == 16 else 2
-#         ax.text(cap, unutilized_mw[i] + y_offset, f"{int(unutilized_mw[i])} MW", 
-#                 color=C_UNUTIL, fontweight='bold', ha='center', path_effects=halo, zorder=5)
 
 # =============================================================================
 # 3. FORMATTING & LEGEND
@@ -116,6 +83,6 @@ plt.tight_layout()
 # Save
 save_path = os.path.join(BASE_FOLDER, 'Thesis_Sizing_Tradeoff_Academic.svg')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
-print(f"✅ Plot saved to: {save_path}")
+
 
 plt.show()

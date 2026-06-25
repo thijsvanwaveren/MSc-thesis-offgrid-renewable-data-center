@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu May 14 10:11:01 2026
-
-@author: thijs
-"""
-
 # -*- coding: utf-8 -*-
 """
-Section 3.6 - Global Macroeconomic Equilibrium
-The "Hero Plot": Optimal Data Center Sizing
-(Integrated Calculation Engine + Ultimate Academic-Consulting Standard)
+Calculates and visualizes the global macroeconomic equilibrium for data center sizing.
+
+Reads parameter sweep results, applies macroeconomic variables (CAPEX, OPEX, WACC), 
+and determines the Annualized Net Profit for each installed IT capacity. Generates the 
+"Hero Plot" which identifies the global financial optimum, illustrating the transition 
+from high marginal utility to the linear capital penalty of stranded hardware.
 """
+
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -121,26 +119,13 @@ opt_y = y_with_c[opt_idx]
 # =============================================================================
 # 3. VISUALIZATION
 # =============================================================================
-fig, ax = plt.subplots(figsize=(12, 7.5), facecolor='white')
+fig, ax = plt.subplots(figsize=(12, 7), facecolor='white')
 
 # --- PHASE SHADING ---
 # Dynamically place the text labels relative to the max profit
 text_y = max(y_with_c) * 0.45 
 
-# # Phase 1: High Marginal Utility
-# ax.axvspan(0, 30, color='#2ecc71', alpha=0.03) 
-# ax.text(23, text_y, "STAGE I\nREVENUE > CAPEX", color='#27ae60', fontweight='bold', fontsize=10, ha='center', alpha=0.6)
-
-# # Phase 2: Saturation / Optimum Zone
-# ax.axvspan(30, 60, color='#f1c40f', alpha=0.03)
-# ax.text(45, text_y, "STAGE II\nAPPROACHING OPTIMUM", color='#d4ac0d', fontweight='bold', fontsize=10, ha='center', alpha=0.6)
-
-# # Phase 3: The Linear Capital Penalty
-# ax.axvspan(60, 110, color='#e74c3c', alpha=0.03)
-# ax.text(85, text_y, "STAGE III\nCAPEX > REVENUE", color='#c0392b', fontweight='bold', fontsize=10, ha='center', alpha=0.6)
-
 # --- PLOT LINES ---
-ax.fill_between(IT_CAPACITIES_MW, y_no_c, y_with_c, color=C_ORANGE, alpha=0.1, label='Tier C Added Value')
 
 ax.plot(IT_CAPACITIES_MW, y_with_c, color=C_ORANGE, marker='D', markersize=7, 
         linestyle='--', linewidth=3, zorder=5, label='Total Net Profit (Incl. Tier C)')
@@ -148,16 +133,15 @@ ax.plot(IT_CAPACITIES_MW, y_with_c, color=C_ORANGE, marker='D', markersize=7,
 ax.plot(IT_CAPACITIES_MW, y_no_c, color=C_NAVY, marker='o', markersize=7, 
         linestyle='-', linewidth=3, zorder=4, label='Net Profit (Tiers A, B1, and B2)')
 
-# --- HIGHLIGHT THE OPTIMUM ---
-ax.scatter(opt_x, opt_y, facecolors='none', edgecolors=C_PEAK, s=400, linewidth=3, zorder=10)
-ax.annotate(f"GLOBAL OPTIMUM\n{int(opt_x)} MW", xy=(opt_x, opt_y+ (max(y_with_c)*0.05)), 
-            xytext=(opt_x, opt_y + (max(y_with_c)*0.12)), ha='center', fontsize=12, fontweight='bold', color=C_PEAK,
-            arrowprops=dict(arrowstyle='->', color=C_PEAK, lw=2), path_effects=halo)
+ax.fill_between(IT_CAPACITIES_MW, y_no_c, y_with_c, color=C_ORANGE, alpha=0.1, label='Tier C Added Value')
+
 
 # --- SELECTIVE DATA LABELS ---
 for i, (cap, val) in enumerate(zip(IT_CAPACITIES_MW, y_with_c)):
-    if cap in [16, 30, 50, 75, 100]:
+    if cap in [30, 50, 75, 100]:
         ax.text(cap, val + (max(y_with_c)*0.03), f"€{int(val)}M", color='#d35400', fontweight='bold', ha='center', path_effects=halo)
+    if cap in [16]:
+        ax.text(cap-1, val + (max(y_with_c)*0.03), f"€{int(val)}M", color='#d35400', fontweight='bold', ha='center', path_effects=halo)
 
 for i, (cap, val) in enumerate(zip(IT_CAPACITIES_MW, y_no_c)):
     if cap in [16, 50, 100]:
@@ -170,12 +154,13 @@ ax.set_xlabel("Installed IT Capacity (MW)", fontsize=13, fontweight='bold', colo
 
 ax.set_xticks(IT_CAPACITIES_MW)
 ax.set_xticklabels([f"{cap:.0f}" for cap in IT_CAPACITIES_MW], fontsize=11)
-ax.set_xlim(12, 105)
+ax.set_xlim(12, 102)
 
 # Dynamic Y-limits based on outcomes
 y_max = max(y_with_c)
 y_min = min(y_no_c)
-ax.set_ylim(y_min - (y_max*0.1), y_max + (y_max*0.25))
+#ax.set_ylim(y_min - (y_max*0.1), y_max + (y_max*0.15))
+ax.set_ylim(0, y_max + (y_max*0.15))
 
 ax.grid(axis='y', linestyle='-', alpha=0.2, color='#b0b0b0', zorder=0)
 ax.axhline(0, color='#333333', linewidth=1.5, zorder=1)
@@ -188,12 +173,10 @@ ax.spines['right'].set_visible(False)
 
 # --- LEGEND ---
 ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, 
-          frameon=True, facecolor='white', edgecolor='#e0e0e0', framealpha=1, borderpad=1, fontsize=11)
+          frameon=False, facecolor='white', edgecolor='#e0e0e0', framealpha=1, borderpad=1, fontsize=11)
 
 plt.tight_layout()
 
 save_path = os.path.join(BASE_FOLDER, 'Hero_Plot_Dynamic.svg')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
-print(f"✅ Dynamic Plot saved to: {save_path}")
-
 plt.show()

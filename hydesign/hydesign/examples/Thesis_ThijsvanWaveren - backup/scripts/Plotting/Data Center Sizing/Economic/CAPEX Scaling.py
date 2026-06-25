@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 22 16:49:35 2026
+Calculates and visualizes the total annualized fixed costs across varying data center capacities.
 
-@author: thijs
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Section 3.5/3.6 - Total Annual Fixed Costs (The Linear Penalty)
-Publication-grade visualization (Area + Subtle Markers)
+Applies the Capital Recovery Factor (CRF) to IT hardware and facility CAPEX, combining 
+them with fixed OPEX to demonstrate the linear capital penalty associated with scaling 
+the data center infrastructure. Outputs a stacked area chart.
 """
 
 import matplotlib.pyplot as plt
@@ -91,23 +87,11 @@ ax.scatter(
 # --- SMART LABEL POSITIONING (NO OVERLAP) ---
 vertical_offsets = [6, 10, 6, 10, 6, 10, 6]  # stagger vertically
 
-# for i in range(len(x)):
-#     ax.text(
-#         x[i],
-#         y_total[i] + vertical_offsets[i],
-#         f'€{y_total[i]:.0f}M',
-#         ha='center',
-#         va='bottom',
-#         fontsize=10,
-#         fontweight='semibold',
-#         color='#222222'
-#     )
-
 # =============================================================================
 # 4. FORMATTING
 # =============================================================================
 ax.set_ylabel("Annualized Fixed Cost (Millions € / Year)", fontsize=11, fontweight='bold')
-ax.set_xlabel("Installed IT Capacity (MW)", fontsize=11, fontweight='bold')
+ax.set_xlabel("Installed IT Capacity (MW$_{\mathrm{IT}}$)", fontsize=11, fontweight='bold')
 
 ax.set_xticks(x)
 ax.set_xticklabels([f"{int(v)}" for v in x], fontsize=10)

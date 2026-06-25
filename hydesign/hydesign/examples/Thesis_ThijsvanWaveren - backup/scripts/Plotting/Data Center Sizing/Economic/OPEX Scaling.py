@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Section 3.5 - The Zero Marginal Cost of Opportunistic Workloads
-Visualizes the Variable OPEX breakdown using a Stacked Bar Chart.
-(Refined Academic Consulting Standard with Integrated Base)
+Visualizes the variable OPEX breakdown using a stacked area chart.
+
+Demonstrates the concept of "Zero Marginal Cost" for opportunistic workloads 
+by plotting the breakdown of annual operating expenditures. Shows that while the 
+base hybrid power plant costs remain relatively fixed, the variable water and 
+operational costs scale dynamically with the dispatch of different workload tiers.
 """
+
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import warnings
+import matplotlib.patches as mpatches
 
 warnings.filterwarnings("ignore")
 
@@ -23,7 +28,6 @@ OTHER_VARIABLE_OPEX_EUR_PER_MWH = 3  # Water / Minor Variable OPEX
 
 # Academic-Consulting Color Palette
 C_HPP = '#94a3b8'        # Professional Slate Grey (Visible, solid, but not overpowering)
-C_HPP_EDGE = '#64748b'   # Darker slate for crisp definition
 C_CORE = '#2b6cb0'       # Editorial Steel Blue (Core committed OPEX)
 C_TIER_C = '#e28743'     # Muted Terracotta / Orange (Opportunistic extra OPEX)
 
@@ -31,31 +35,12 @@ C_TIER_C = '#e28743'     # Muted Terracotta / Orange (Opportunistic extra OPEX)
 # 2. DATA EXTRACTION
 # =============================================================================
 var_cost_data = []
-print("Calculating Variable Cost Breakdown (Refined Bar Chart)...")
 
 for cap in IT_CAPACITIES_MW:
     file_name = f"Feasible_3D_Sweep_Results_99.9pct_IT{cap:.1f}.csv"
     file_path = os.path.join(BASE_FOLDER, file_name)
-    
-    if os.path.exists(file_path):
-        df = pd.read_csv(file_path)
-    else:
-        # Synthetic fallback for demonstration
-        rows = []
-        max_a, max_b1, max_b2 = int(cap/1.5)+1, int(cap/1.1)+1, int(cap/1.3)+1
-        for a in range(0, max_a):
-            for b1 in range(0, max_b1):
-                for b2 in range(0, max_b2):
-                    if (a*1.5 + b1*1.1 + b2*1.3) <= cap: 
-                        rows.append({
-                            'Tier_A_MW': a, 'Tier_B1_MW': b1, 'Tier_B2_MW': b2,
-                            'Energy_A_Annual_GWh': a * 8.76 * 0.9,
-                            'Energy_B1_Annual_GWh': b1 * 8.76 * 0.5,
-                            'Energy_B2_Annual_GWh': b2 * 8.76 * 0.3,
-                            'Total_Delivered_Annual_GWh': (a*0.9 + b1*0.5 + b2*0.3 + (cap*0.1)) * 8.76, 
-                            'LCOE_delivered': np.random.uniform(40, 60)
-                        })
-        df = pd.DataFrame(rows)
+    df = pd.read_csv(file_path)
+   
 
     for col in df.columns:
         if "Energy" in col and "MWh" in col:
@@ -104,9 +89,9 @@ for cap in IT_CAPACITIES_MW:
 df_vc = pd.DataFrame(var_cost_data)
 
 # =============================================================================
-# 3. CREATE VISUALIZATION (Stacked Bar Chart)
+# 3. CREATE VISUALIZATION (Stacked Area Chart)
 # =============================================================================
-fig, ax = plt.subplots(figsize=(9, 5.5), facecolor='white')
+fig, ax = plt.subplots(figsize=(10, 6), facecolor='white')
 
 x = df_vc['IT_Capacity_MW'].values
 y_elec = df_vc['HPP_Elec_Cost'].values
@@ -114,41 +99,30 @@ y_core = df_vc['Water_Core'].values
 y_tier_c = df_vc['Water_Tier_C'].values
 y_total = y_elec + y_core + y_tier_c
 
-# Use a categorical X-axis for evenly spaced bars
-x_pos = np.arange(len(x))
-bar_width = 0.65
+# Create Stacked Area
+ax.stackplot(
+    x, y_elec, y_core, y_tier_c,
+    colors=[C_HPP, C_CORE, C_TIER_C],
+    edgecolor='white',
+    linewidth=0.8,
+    alpha=0.95,
+    zorder=2
+)
 
-# Stack 1: HPP Generation Cost (Now a solid, clear part of the stack)
-ax.bar(x_pos, y_elec, width=bar_width, color=C_HPP, edgecolor=C_HPP_EDGE, 
-       linewidth=1.0, label='HPP Electricity Generation', zorder=3)
+# Subtle Markers on the top edge
+ax.plot(x, y_total, color='#555555', marker='o', markersize=5, linewidth=0, zorder=4, alpha=0.8)
 
-# Stack 2: Core Workload Variable OPEX
-ax.bar(x_pos, y_core, width=bar_width, bottom=y_elec, color=C_CORE, 
-       edgecolor='#1a426b', linewidth=1.0, label='Committed Workload OPEX (Water)', zorder=3)
-
-# Stack 3: Tier C Variable OPEX
-ax.bar(x_pos, y_tier_c, width=bar_width, bottom=y_elec+y_core, color=C_TIER_C, 
-       edgecolor='#a05d2c', linewidth=1.0, label='Tier C Opportunistic OPEX (Water)', zorder=3)
-
-# Annotate totals neatly on top of each bar
-for i in range(len(x_pos)):
-    ax.annotate(f'€{y_total[i]:.1f}M', 
-                xy=(x_pos[i], y_total[i]), 
-                xytext=(0, 6), # Offset slightly above the bar
-                textcoords="offset points", 
-                ha='center', va='bottom', 
-                fontsize=9.5, fontweight='bold', color='#222222')
-
-# Formatting & Titles (No Main Title)
+# Formatting & Titles
 ax.set_ylabel("Annual Cost (Millions € / yr)", fontsize=11, fontweight='bold', color='#222222')
-ax.set_xlabel("Data Center Installed IT Capacity", fontsize=11, fontweight='bold', color='#222222', labelpad=10)
+ax.set_xlabel("Installed IT Capacity (MW$_{{IT}}$)", fontsize=11, fontweight='bold', color='#222222')
 
-# Clean proportional ticks corresponding to actual data points
-ax.set_xticks(x_pos)
-ax.set_xticklabels([f"{cap:.0f} MW" for cap in x], fontsize=10, fontweight='bold', color='#222222')
+# Proportional continuous X-axis
+ax.set_xlim(min(x), max(x))
+ax.set_xticks(x)
+ax.set_xticklabels([f"{cap:.0f}" for cap in x], fontsize=10, color='#222222')
 
 # Set Axis Limits dynamically based on max total height
-ax.set_ylim(0, max(y_total) * 1.25) # Extra headroom for legend and labels
+ax.set_ylim(0, max(y_total) * 1.15) 
 
 # Minimalist Grid & Bold Spines
 ax.grid(axis='y', linestyle='-', alpha=0.3, color='#b0b0b0', zorder=0)
@@ -160,16 +134,21 @@ ax.spines['left'].set_color('#222222')
 ax.spines['bottom'].set_linewidth(1.2)
 ax.spines['bottom'].set_color('#222222')
 ax.tick_params(axis='y', colors='#222222', labelsize=10)
-ax.tick_params(axis='x', length=0) # Remove x-axis tick marks for cleaner look
 
-# Legend: Reverse order to perfectly match the visual top-to-bottom stack
-handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles[::-1], labels[::-1], loc='upper left', fontsize=10, 
-          frameon=False, borderpad=1)
+# Legend: Reordered to match the visual stack (Bottom -> Middle -> Top)
+legend_handles = [
+    mpatches.Patch(facecolor=C_HPP, label='HPP Electricity Generation'),
+    mpatches.Patch(facecolor=C_CORE, label='Committed Workload OPEX (Water)'),
+    mpatches.Patch(facecolor=C_TIER_C, label='Tier C Opportunistic OPEX (Water)')
+]
+
+ax.legend(handles=legend_handles, loc='upper center', bbox_to_anchor=(0.5, -0.15), 
+          ncol=3, frameon=False, fontsize=10)
 
 plt.tight_layout()
-save_path = os.path.join(BASE_FOLDER, 'variable_cost_bar_refined.svg')
-if os.path.exists(BASE_FOLDER):
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    print(f"-> Plot saved to: {save_path}")
+plt.subplots_adjust(bottom=0.2) # Give extra room for the legend
+
+# Save & Show
+save_path = os.path.join(BASE_FOLDER, 'variable_cost_area_refined.svg')
+plt.savefig(save_path, dpi=300, bbox_inches='tight')
 plt.show()

@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon May 11 10:15:58 2026
+Visualizes workload capacity cannibalization across different flexibility tiers.
 
-@author: thijs
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Standalone Plotting Script: Workload Cannibalization (2D Slices)
-Generates a side-by-side comparison of Firm vs Daily (High Cannibalization) 
-and Firm vs Weekly (Zero Cannibalization) within a 16 MW Data Center.
+Generates a side-by-side comparison of Firm vs. Daily (Tier B1) and Firm vs. 
+Weekly (Tier B2) workloads for a bounded IT capacity. Extracts the Pareto front 
+from 3D parameter sweep results to demonstrate how flexibility timescales 
+impact the maximum feasible workload combinations.
 """
 
 import os
@@ -48,14 +44,6 @@ def get_pareto_fronts():
         
         return max_b1_per_a['Tier_A_MW'].values, max_b1_per_a['Tier_B1_MW'].values, max_b2_per_a['Tier_B2_MW'].values
 
-    # else:
-    #     print("CSV not found. Generating synthetic Pareto fronts based on thesis text...")
-    #     # Synthetic data matching your text: A maxes at 8, B1 maxes at 14, B2 maxes at 16.
-    #     # B1 gets cannibalized faster than 1:1. B2 trades exactly 1:1 with hardware.
-    #     tier_a = np.arange(0, 9, 1)
-    #     max_b1 = np.array([14.0, 12.0, 10.0, 8.0, 6.0, 4.0, 2.0, 0.0, 0.0])
-    #     max_b2 = np.array([16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0, 9.0, 8.0])
-    #     return tier_a, max_b1, max_b2
 
 tier_a, max_b1, max_b2 = get_pareto_fronts()
 hardware_limit = IT_CAPACITY - tier_a
@@ -130,6 +118,5 @@ plt.tight_layout()
 # Save Plot
 plot_fn = os.path.join(BASE_FOLDER, 'Cannibalization_Comparison_16MW.svg')
 plt.savefig(plot_fn, dpi=300, bbox_inches='tight')
-print(f"✅ Final Plot saved to: {plot_fn}")
 
 plt.show()

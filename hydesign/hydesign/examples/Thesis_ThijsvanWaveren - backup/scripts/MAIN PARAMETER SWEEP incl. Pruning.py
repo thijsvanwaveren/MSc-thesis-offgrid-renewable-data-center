@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr 14 14:37:08 2026
+Executes a parameter sweep to find the maximum feasible workload combinations.
 
-@author: thijs
-"""
-"""
-Executes a parameter sweep to find the maximum achieving feasible workload combinations 
-(Tiers A, B1, B2). Applies pruning to not assess mixes which are know to be infeasible 
-or non critical. Saves only feasible mixes.
- 
+Scans through Tier A (firm), Tier B1 (daily flexible), and Tier B2 (weekly flexible) 
+combinations to identify the feasibility frontier for a given reliability target. 
+Applies pruning to skip known infeasible or non-critical mixes, saving only the 
+boundary workload configurations.
+
 Pruning rules:
 1) For fixed (A, B1), if B2 = b is infeasible, break B2 loop
 2) For fixed A, if B1 = b has no feasible B2 at all, break B1 loop
@@ -240,14 +238,7 @@ def run_3d_feasible_sweep(target_rel=99.9):
 
     feasible_results = []
 
-    print("\n" + "=" * 90)
-    print(f" STARTING OUTSIDE-IN BOUNDARY SEARCH ".center(90))
-    print(f" Calculating ONLY the Pareto edge below {GAP_FILL_CEILING_MW:.1f} MW ".center(90))
-    print("=" * 90)
-
     for a_mw in tier_a_array:
-        print(f"\n--- Sweeping A = {a_mw:.1f} MW ---")
-
         # B1 sweeps normally from 0 upwards
         for b1_mw in np.arange(0.0, GAP_FILL_CEILING_MW + 1, 1.0):
             
@@ -313,7 +304,7 @@ def run_3d_feasible_sweep(target_rel=99.9):
 
                     realized_utilization = total_delivered_energy / (MAX_IT_CAPACITY_MW * N_life)
 
-                    print(f" BOUNDARY FOUND! (RelA={rel_a:.2f}%)")
+                    print(f"BOUNDARY FOUND (RelA={rel_a:.2f}%)")
 
                     feasible_results.append({
                         "Total_Provisioned_MW": total_provisioned,
@@ -344,20 +335,13 @@ def run_3d_feasible_sweep(target_rel=99.9):
     # Save combinations
     # --------------------------------------------
     df_feasible = pd.DataFrame(feasible_results)
-
-    if df_feasible.empty:
-        print("\n No boundary combinations found.")
-        return df_feasible
-
     csv_fn = os.path.join(current_dir, f'Feasible_3D_Sweep_Results_{target_rel:.1f}pct_IT{MAX_IT_CAPACITY_MW}_BOUNDARY.csv')
     df_feasible.to_csv(csv_fn, index=False)
 
-    print(f"\n Boundary combinations saved to: {csv_fn}")
     return df_feasible
  
 
 if __name__ == "__main__":
-    print("\n=== Data Center Hybrid Power Plant 3D Feasible Sweep ===")
     try:
         user_input = input("Enter the target reliability percentage (e.g., 99.9, 95.0): ")
         target_reliability = float(user_input.strip())

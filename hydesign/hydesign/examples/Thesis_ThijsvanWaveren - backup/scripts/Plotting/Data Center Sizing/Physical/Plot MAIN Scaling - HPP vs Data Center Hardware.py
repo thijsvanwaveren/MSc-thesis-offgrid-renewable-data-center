@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Section 3.4 - Data Center Workload Optimization
-Unified Script: Generates both the Energy Balance and Hardware Efficiency plots.
-(Updated with Tier C Revenue and Explicit Tier A Tie-Breaker Logic)
+Determines and visualizes the economically optimal workload mix across varying data center capacities.
+
+Reads parameter sweep results and calculates the maximum contribution margin for each 
+installed IT capacity based on tier-specific revenue and operational expenditures. 
+Generates stacked bar charts to illustrate the system's dual efficiency constraints: 
+the hybrid power plant energy balance (highlighting renewable curtailment) and the 
+data center hardware efficiency (highlighting stranded/unutilized IT capacity).
 """
 
 import pandas as pd
@@ -23,7 +28,7 @@ IT_CAPACITIES_MW = [16.0, 20.0, 30.0, 40.0, 50.0, 75.0, 100.0]
 REVENUE_PER_MWH = {"A": 4000, "B1": 2800, "B2": 1600, "C": 416.72}
 OTHER_VARIABLE_OPEX_EUR_PER_MWH = 3
 
-# Academic-Consulting Color Palette
+# Color Palette
 C_A = '#08306b'        # Deep Navy (Tier A)
 C_B1 = '#2879b9'       # Strong Blue (Tier B1)
 C_B2 = '#73b3d8'       # Soft Blue (Tier B2)
@@ -199,7 +204,7 @@ ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=6, frameon=Fals
 plt.tight_layout()
 save_path_1 = os.path.join(BASE_FOLDER, 'Thesis_Energy_Balance_Optimal_Mix_Labeled_adjusted.svg')
 fig1.savefig(save_path_1, dpi=300, bbox_inches='tight')
-print(f"✅ Plot 1 saved to: {save_path_1}")
+
 
 # =============================================================================
 # 4. PLOT 2: HARDWARE EFFICIENCY (DC PERSPECTIVE)
@@ -243,7 +248,6 @@ ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=5, frameon=Fals
 plt.tight_layout()
 save_path_2 = os.path.join(BASE_FOLDER, 'Thesis_Hardware_Efficiency_Optimal_Mix_adjusted.svg')
 fig2.savefig(save_path_2, dpi=300, bbox_inches='tight')
-print(f"✅ Plot 2 saved to: {save_path_2}")
 
 # Display both plots
 plt.show()

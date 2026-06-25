@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 18 15:11:31 2026
-
-@author: thijs
-"""
-
 # -*- coding: utf-8 -*-
 """
-Section 3.6 - The Macroeconomic Trade-off
-Publication-grade plot showing the structural dilemma between renewable 
-curtailment and unutilized hardware, normalized as resource underutilization.
+Visualizes the macroeconomic trade-off between power plant and data center sizing.
+
+Plots the structural dilemma of resource underutilization across varying IT capacities. 
+Demonstrates that smaller data centers experience high renewable energy curtailment 
+(power plant underutilization), while larger data centers experience high idle IT 
+hardware (facility underutilization) due to generation profile constraints.
 """
 
 import matplotlib.pyplot as plt
@@ -40,9 +37,6 @@ curtailment_pct = (curtailment_mw / 64.0) * 100
 C_CURTAIL = '#d35400'      # Deep Orange 
 C_UNUTIL = '#2c3e50'       # Deep Navy 
 
-print("\n" + "=" * 80)
-print(" GENERATING PUBLICATION-GRADE SIZING TRADE-OFF PLOT ".center(80))
-print("=" * 80)
 
 # =============================================================================
 # 2. VISUALIZATION
@@ -95,7 +89,5 @@ plt.tight_layout()
 
 # Save
 save_path_svg = os.path.join(BASE_FOLDER, 'Thesis_Sizing_Tradeoff_Academic1.svg')
-if os.path.exists(BASE_FOLDER):
-    plt.savefig(save_path_svg, dpi=300, bbox_inches='tight')
-    print(f" ✅ Saved Publication-Grade Trade-Off Plot to: {save_path_svg}")
+plt.savefig(save_path_svg, dpi=300, bbox_inches='tight')
 plt.show()

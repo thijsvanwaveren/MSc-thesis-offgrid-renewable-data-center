@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Section 3.x - Queueing End-of-Horizon Effect Visualization
-Correctly maps dates to December and applies publication-ready styling.
+Visualizes the queueing end-of-horizon effect for highly flexible workloads.
+
+Simulates a hybrid power plant paired with a dedicated Tier B2 (weekly flexible) 
+data center. Extracts the final 500 hours of the operational year to demonstrate 
+how the Energy Management System (EMS) exploits the finite simulation horizon 
+by intentionally accumulating unserved workloads up to the Service Level Agreement 
+(SLA) boundary limit in the final weeks of December.
 """
 
 import os
@@ -12,16 +17,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-# --- HYDESIGN IMPORTS ---
-current_dir = os.path.dirname(os.path.abspath(__file__))
-thesis_dir = os.path.abspath(os.path.join(current_dir, '..','..'))
-root_dir = os.path.abspath(os.path.join(thesis_dir, '..', '..','..'))
+# =============================================================================
+# SETUP & PATHS
+# =============================================================================
+scripts_dir = os.path.dirname(os.path.abspath(__file__))
+thesis_dir = os.path.abspath(os.path.join(scripts_dir, '..', '..'))
+root_dir = os.path.abspath(os.path.join(thesis_dir, '..', '..', '..'))
+vis_dir = os.path.join(thesis_dir, "Figures")
+
+os.makedirs(vis_dir, exist_ok=True)
 sys.path.append(root_dir)
 
 from hydesign.assembly.hpp_assembly_tierb2_thijs_3_3_26 import hpp_model_constant_output_offgrid as hpp_model
 
 # =============================================================================
-# 1. INPUTS & PLOT CONFIGURATION
+# INPUTS & PLOT CONFIGURATION
 # =============================================================================
 FACILITY_MW = 16.0
 TIER_B2_MW = 16.0   
@@ -31,8 +41,8 @@ SAVE_PLOTS = True
 
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.size'] = 9          
-plt.rcParams['axes.labelsize'] = 9     
-plt.rcParams['xtick.labelsize'] = 8    
+plt.rcParams['axes.labelsize'] = 9      
+plt.rcParams['xtick.labelsize'] = 8     
 plt.rcParams['ytick.labelsize'] = 8
 plt.rcParams['legend.fontsize'] = 8    
 
@@ -40,22 +50,27 @@ C_B2    = '#8e44ad'
 C_GEN   = '#2c3e50'  
 C_DEF2  = '#c0392b'  
 
-# Correctly generate the full year so the final 500 hours map to December
+# Generate the full year to ensure the final 500 hours correctly map to December
 full_time_index = pd.date_range(start="2026-01-01 00:00", periods=8760, freq='h')
 
 def evaluate_16mw_anomaly():
+    """Configures and runs the CPLEX evaluation for the anomaly scenario."""
     os.environ['REWARD_C2'] = '1000.0' 
     par_fn = os.path.join(thesis_dir, 'inputs', 'hpp_pars.yml')
-    with open(par_fn, 'r') as f: sim_pars = yaml.safe_load(f)
+    with open(par_fn, 'r') as f: 
+        sim_pars = yaml.safe_load(f)
         
     sim_pars['G_MW'] = 0
     sim_pars['battery_charge_efficiency'] = float(np.sqrt(0.86))
+    
     temp_fn = os.path.join(thesis_dir, 'inputs', 'hpp_pars_anomaly.yml')
-    with open(temp_fn, 'w') as f: yaml.dump(sim_pars, f)
+    with open(temp_fn, 'w') as f: 
+        yaml.dump(sim_pars, f)
 
     N_life = 25 * 8760
     fixed_design = [35, 300, 5, 20, 7, 180, 39, 180, 1.25, 25, 8, 10]
     site_name = 'Denmark_good_solar'
+    
     examples_sites = pd.read_csv(os.path.join(thesis_dir, '..', 'examples_sites.csv'), sep=';')
     ex_site = examples_sites.loc[examples_sites.name == site_name]
     weather_fn = os.path.join(thesis_dir, '..', ex_site['input_ts_fn'].values[0])
@@ -67,7 +82,7 @@ def evaluate_16mw_anomaly():
 
     hpp = hpp_model(
         latitude=ex_site['latitude'].values[0], longitude=ex_site['longitude'].values[0], altitude=ex_site['altitude'].values[0],
-        num_batteries=1, work_dir=current_dir, input_ts_fn=weather_fn, sim_pars_fn=temp_fn,
+        num_batteries=1, work_dir=scripts_dir, input_ts_fn=weather_fn, sim_pars_fn=temp_fn,
         tier_a_profile=t_a_ts, tier_b_profile=t_b1_ts, tier_b2_profile=t_b2_ts, load_profile_ts=total_load, battery_deg=False
     )
     hpp.evaluate(*fixed_design)
@@ -81,11 +96,13 @@ def evaluate_16mw_anomaly():
 res = evaluate_16mw_anomaly()
 
 # =============================================================================
-# 3. QUEUE TRACKING & DATA SLICING
+# QUEUE TRACKING & DATA SLICING
 # =============================================================================
 def track_raw_queue(served, target_mw):
+    """Calculates the chronological queue accumulation over the year."""
     q = np.zeros(8760)
-    for t in range(1, 8760): q[t] = max(0, q[t-1] + target_mw - served[t])
+    for t in range(1, 8760): 
+        q[t] = max(0, q[t-1] + target_mw - served[t])
     return q
 
 q_b2_full = track_raw_queue(res['s_b2'], TIER_B2_MW)
@@ -99,10 +116,10 @@ q_b2_plot = q_b2_full[plot_idx]
 def_b2_plot = np.maximum(0, TIER_B2_MW - s_b2_plot)
 
 # =============================================================================
-# 4. PLOTTING FUNCTION
+# PLOTTING FUNCTION
 # =============================================================================
 def plot_end_of_horizon_effect():
-    # THE FIX: Increased hspace from 0.3 to 0.4 to create a safe "shelf" for the legend
+    """Generates the dual-panel time-series visualization."""
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7.5, 5), sharex=True, gridspec_kw={'height_ratios': [1.5, 1], 'hspace': 0.4})
 
     # --- TOP PLOT: POWER DISPATCH ---
@@ -133,22 +150,22 @@ def plot_end_of_horizon_effect():
     ax2.axhline(SLA_LIMIT_MWH, color='red', linestyle='--', linewidth=1.5, alpha=0.8, label=f'SLA limit ({int(SLA_LIMIT_MWH)} MWh)')
 
     ax2.set_ylabel("Queue\n(MWh)", fontweight='bold', color='#2c3e50')
-    
-    # Brought the Y-limit back down to look tight and proportionate
     ax2.set_ylim(0, SLA_LIMIT_MWH * 1.15)
     
-    # Corrected December Date Formatting
     ax2.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
     ax2.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, PLOT_LAST_N_HOURS//120)))
 
-    # THE FIX: Pushed the legend outside and above the graph, splitting it into 2 columns for neatness
     ax2.legend(loc='lower center', bbox_to_anchor=(0.5, 1.05), ncol=2, frameon=False)
 
     fig.align_ylabels([ax1, ax2])
     plt.tight_layout()
     
-    file_name = "EMSplot_EndOfHorizon.svg" if PLOT_LAST_N_HOURS is None else f"EMSplot_EndOfHorizon.svg"
-    if SAVE_PLOTS: plt.savefig(os.path.join(current_dir, file_name), bbox_inches='tight')
+    file_name = "EMSplot_EndOfHorizon.svg"
+    if SAVE_PLOTS: 
+        save_path = os.path.join(vis_dir, file_name)
+        plt.savefig(save_path, bbox_inches='tight')
+        print(f"Plot saved to: {save_path}")
+        
     plt.show()
     
 if __name__ == "__main__":

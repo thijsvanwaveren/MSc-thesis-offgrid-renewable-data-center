@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon May 18 12:11:56 2026
+Simulates full-year hybrid power plant operations for specific data center capacities.
 
-@author: thijs
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Section 3.7 - Full Yearly Operation Extraction & LDC Plotting
-Extracts 8760-hour chronological data for each capacity, saves it to CSV,
-and generates high-contrast Load Duration Curves in the IDE.
+Extracts 8760-hour chronological dispatch data for Tier A, B1, B2, and C workloads.
+Saves the operational profiles to CSV files and generates baseline Load Duration Curves
+(LDCs) to visualize capacity utilization.
 """
 
 import os
@@ -49,11 +44,10 @@ target_mixes = [
     (100.0, 8.0, 0.0, 29.0)
 ]
 
-# High-Contrast Color Palette for easy distinction
-C_A = '#08306b'         # Deep Navy (Firm)
-C_B1 = '#17becf'        # Teal/Cyan (Daily)
-C_B2 = '#d62728'        # Crimson Red (Weekly - Highlights the massive bursts)
-C_C = '#7f7f7f'         # Neutral Grey (Opportunistic)
+C_A = '#08306b'         # Navy 
+C_B1 = '#17becf'        # Cyan
+C_B2 = '#d62728'        # Red
+C_C = '#7f7f7f'         # Grey 
 C_GRID = '#e0e0e0'
 
 def configure_parameters(thesis_dir):
@@ -68,7 +62,7 @@ def configure_parameters(thesis_dir):
     return temp_fn
 
 # =============================================================================
-# 2. MAIN LOOP: SIMULATE, SAVE CSV, & PLOT
+# 2. MAIN LOOP
 # =============================================================================
 fixed_design = [35, 300, 5, 20, 7, 180, 39, 180, 1.25, 25, 8, 10]
 N_life = 25 * 8760
@@ -81,12 +75,9 @@ sim_pars_fn = configure_parameters(thesis_dir)
 
 os.environ['REWARD_C2'] = '-0.5'
 
-print("\n" + "=" * 80)
-print(" GENERATING YEARLY OPERATION CSVs & DURATION CURVES ".center(80))
-print("=" * 80)
 
 for cap_mw, a_mw, b1_mw, b2_mw in target_mixes:
-    print(f"\n🚀 Simulating {cap_mw} MW Facility (A:{a_mw}, B1:{b1_mw}, B2:{b2_mw})...")
+    print(f"\nSimulating {cap_mw} MW Facility (A:{a_mw}, B1:{b1_mw}, B2:{b2_mw})...")
     
     t_a_ts = np.full(N_life, a_mw)
     t_b1_ts = np.full(N_life, b1_mw * 24.0)
@@ -118,7 +109,7 @@ for cap_mw, a_mw, b1_mw, b2_mw in target_mixes:
         served_b2 = prob.get_val('ems.Served_B2')[:8760]
         served_c = prob.get_val('ems.Served_C2')[:8760]
     except KeyError:
-        print(f"❌ ERROR: Missing OpenMDAO variable for {cap_mw} MW. Skipping.")
+        print(f"ERROR: Missing OpenMDAO variable for {cap_mw} MW. Skipping.")
         continue
     
     curtailment = prob.get_val('ems.hpp_curt_t')[:8760]
@@ -137,10 +128,9 @@ for cap_mw, a_mw, b1_mw, b2_mw in target_mixes:
     
     csv_filename = os.path.join(current_dir, f'Yearly_Operation_{cap_mw:.0f}MW.csv')
     df_chrono.to_csv(csv_filename, index=False)
-    print(f"   ✅ Saved chronological operation to: Yearly_Operation_{cap_mw:.0f}MW.csv")
 
     # -------------------------------------------------------------------------
-    # 4. PLOTTING THE LDC (High Contrast, No Fills)
+    # 4. PLOTTING THE LDC 
     # -------------------------------------------------------------------------
     # Sort arrays descending for Load Duration
     ldc_a = np.sort(served_a)[::-1]
@@ -157,7 +147,6 @@ for cap_mw, a_mw, b1_mw, b2_mw in target_mixes:
 
     fig, ax = plt.subplots(figsize=(10, 6.5), facecolor='white')
 
-    # Plot crisp, distinct lines (no confusing fills)
     ax.plot(x_pct, ldc_b2, color=C_B2, linewidth=2.5, zorder=4, label=f'Tier B2 (Weekly) - Avg: {avg_b2:.1f} MW')
     ax.plot(x_pct, ldc_c, color=C_C, linewidth=2, linestyle='-', zorder=2, label=f'Tier C (Opportunistic) - Avg: {avg_c:.1f} MW')
     if avg_b1 > 0.1:
@@ -194,8 +183,4 @@ for cap_mw, a_mw, b1_mw, b2_mw in target_mixes:
     ax.legend(loc='upper right', frameon=True, edgecolor='#e0e0e0', fontsize=10, facecolor='white', framealpha=0.95)
 
     plt.tight_layout()
-    plt.show() # Pops up directly in Spyder
-
-print("\n" + "=" * 80)
-print(" All extractions and plots completed! ")
-print("=" * 80)
+    plt.show() 

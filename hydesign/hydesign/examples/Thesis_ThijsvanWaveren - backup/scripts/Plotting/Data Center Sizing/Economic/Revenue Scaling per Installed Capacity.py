@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue May 19 14:22:54 2026
-
-@author: thijs
-"""
-
 # -*- coding: utf-8 -*-
 """
-Section 3.5 - Economies of Scale in Revenue Generation (Stacked Yield per MW)
-Extracts the actual delivered Energy (GWh) from the 3D sweep CSVs, 
-calculates Gross Revenue by workload tier, divides by installed capacity 
-to find the Yield per MW, and plots a continuous Stacked Area Chart.
+Visualizes the economies of scale and annual revenue yield per installed megawatt.
+
+Reads parameter sweep data to extract the delivered energy for optimal workload 
+mixes across varying data center capacities. Calculates tier-specific gross revenue 
+and normalizes it by installed IT capacity to determine the revenue yield per MW. 
+Outputs a stacked area chart illustrating the diminishing marginal financial returns 
+as data center capacity scales against a fixed hybrid power plant generation profile.
 """
 
 import pandas as pd
@@ -146,7 +143,7 @@ ax.scatter(capacities, yield_totals,
 # 3. Chart Formatting
 #ax.set_title("Annual Revenue Yield per Installed Megawatt by Workload Tier", fontsize=15, fontweight='bold', pad=20, color='#333333')
 ax.set_ylabel("Annual Revenue Yield (Millions € / MW)", fontsize=12, fontweight='bold', color='#444444')
-ax.set_xlabel("Installed IT Capacity (MW)", fontsize=12, fontweight='bold', color='#444444')
+ax.set_xlabel("Installed IT Capacity (MW$_{\mathrm{IT}}$)", fontsize=12, fontweight='bold', color='#444444')
 
 ax.set_xlim(min(capacities), max(capacities))
 ax.set_xticks(capacities)
@@ -176,7 +173,4 @@ plt.subplots_adjust(bottom=0.25)
 # Save & Show
 save_path = os.path.join(BASE_FOLDER, 'revenue_yield_per_mw_stacked.svg')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
-print("\n" + "=" * 60)
-print(f"✅ Plot successfully extracted and saved to: {save_path}")
-print("=" * 60)
 plt.show()

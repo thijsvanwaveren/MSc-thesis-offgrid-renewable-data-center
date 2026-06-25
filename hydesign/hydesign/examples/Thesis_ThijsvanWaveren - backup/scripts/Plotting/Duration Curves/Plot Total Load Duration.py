@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Section 3.7 - Pure Facility Utilization Curves
-Reads chronological CSVs, sorts by Total Simultaneous Load, and plots 
-a pure monolithic area chart to reveal Total Active Servers vs. Idle Servers.
-"""
+Generates facility utilization duration curves to visualize active versus idle IT hardware.
 
+Reads chronological operation data and plots a monolithic area chart based on 
+total simultaneous load. This highlights the aggregate utilization rate of the 
+data center hardware and visualizes stranded (idle) capital over the year.
+"""
 import os
 import numpy as np
 import pandas as pd
@@ -24,10 +25,6 @@ C_ACTIVE = '#2c3e50'    # Dark Slate Blue (Active Servers)
 C_IDLE_EDGE = '#c0392b' # Deep Red (Highlights the danger of idle capital)
 C_GRID = '#e0e0e0'
 
-print("\n" + "=" * 80)
-print(" GENERATING PURE FACILITY UTILIZATION CURVES ".center(80))
-print("=" * 80)
-
 # =============================================================================
 # 2. MAIN LOOP
 # =============================================================================
@@ -35,16 +32,9 @@ for cap_mw in IT_CAPACITIES_MW:
     csv_filename = f'Yearly_Operation_{cap_mw:.0f}MW.csv'
     file_path = os.path.join(current_dir, csv_filename)
     
-    if not os.path.exists(file_path):
-        print(f"⚠️ Skipping {cap_mw} MW (CSV not found).")
-        continue
-        
-    print(f"📊 Plotting Pure Utilization Curve for {cap_mw} MW Facility...")
     df = pd.read_csv(file_path)
     
-    # -------------------------------------------------------------------------
-    # THE MATH: Sort ONLY the Total Load descending
-    # -------------------------------------------------------------------------
+  
     total_sorted = np.sort(df['Total_Hardware_Used_MW'].values)[::-1]
     x_pct = np.linspace(0, 100, len(df))
 
@@ -65,13 +55,13 @@ for cap_mw in IT_CAPACITIES_MW:
 
     # 3. Facility Limit Line
     ax.axhline(cap_mw, color='#333333', linestyle='-', linewidth=2.5, zorder=5)
-    ax.text(101.5, cap_mw, f'Facility Limit\n({cap_mw} MW)', color='#333333', 
+    ax.text(101.5, cap_mw, f'Facility Limit\n({cap_mw}' + r' MW$_{\mathrm{IT}}$)', color='#333333', 
             va='center', fontweight='bold', fontsize=10, clip_on=False)
 
     # Chart Formatting
     #ax.set_title(f"Combined Load Duration Curve: {cap_mw:.0f} MW Data Center", 
                  #fontsize=15, fontweight='bold', pad=20, color='#333333')
-    ax.set_ylabel("Total Hardware Utilized (MW)", fontsize=12, fontweight='bold', color='#444444')
+    ax.set_ylabel("Total Hardware Utilized (MW$_{\mathrm{IT}}$)", fontsize=12, fontweight='bold', color='#444444')
     ax.set_xlabel("Percentage of the Year (%)", fontsize=12, fontweight='bold', color='#444444')
 
     ax.set_xlim(0, 100)
@@ -97,7 +87,3 @@ for cap_mw in IT_CAPACITIES_MW:
     svg_filename = os.path.join(current_dir, f'Thesis_Pure_Utilization_{cap_mw:.0f}MW.svg')
     plt.savefig(svg_filename, dpi=300, bbox_inches='tight')
     plt.show()
-
-print("\n" + "=" * 80)
-print(" All pure duration curves generated successfully! ")
-print("=" * 80)

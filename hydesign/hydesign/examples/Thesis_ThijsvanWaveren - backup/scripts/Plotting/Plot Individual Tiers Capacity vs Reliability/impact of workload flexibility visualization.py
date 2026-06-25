@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Section 3.2 - Isolated Workload Reliability Limits
-(Upgraded with Academic-Consulting Formatting & Clean Legend)
+Visualizes the reliability-capacity trade-off for isolated workload tiers.
+
+Reads simulation data for individual, isolated workloads (Firm, Daily Flexible, 
+and Weekly Flexible). Generates a plot comparing their Service Level Agreement (SLA) 
+fulfillment against installed capacity, highlighting the maximum viable capacity 
+before breaching the 99.9% reliability target.
 """
 
 import os
@@ -45,15 +49,9 @@ def find_actual_optimum(df, mw_col, rel_col, target=99.9):
 # =============================================================================
 # 3. LOAD AND PREPARE DATA
 # =============================================================================
-if not (os.path.exists(file_a) and os.path.exists(file_b1) and os.path.exists(file_b2)):
-    print("Warning: CSV files not found. Using synthetic data for plotting demonstration.")
-    df_a = pd.DataFrame({'Tier_A_MW': np.arange(0, 51), 'Reliability_Time_A': [100]*9 + [99.5 - (x-8)*1.1 for x in range(9, 51)]})
-    df_b1 = pd.DataFrame({'Tier_B_MW': np.arange(0, 51), 'Reliability_Deadline_B': [100]*16 + [99.5 - (x-15)*1.0 for x in range(16, 51)]})
-    df_b2 = pd.DataFrame({'Tier_B2_MW': np.arange(0, 51), 'Reliability_Deadline_B2': [100]*40 + [99.5 - (x-39)*0.9 for x in range(40, 51)]})
-else:
-    df_a = pd.read_csv(file_a)
-    df_b1 = pd.read_csv(file_b1)
-    df_b2 = pd.read_csv(file_b2)
+df_a = pd.read_csv(file_a)
+df_b1 = pd.read_csv(file_b1)
+df_b2 = pd.read_csv(file_b2)
 
 df_a = pad_to_zero_mw(df_a, 'Tier_A_MW', 'Reliability_Time_A')
 df_b1 = pad_to_zero_mw(df_b1, 'Tier_B_MW', 'Reliability_Deadline_B')
@@ -127,6 +125,6 @@ plt.subplots_adjust(bottom=0.2)
 # Save Plot
 plot_fn = os.path.join(current_dir, 'Isolated_Capacity_Reliability_Academic.svg')
 plt.savefig(plot_fn, dpi=300, bbox_inches='tight')
-print(f"✅ Final Plot saved to: {plot_fn}")
+print(f"Final Plot saved to: {plot_fn}")
 
 plt.show()

@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Section 3.3 / 3.4 - Economic Optimization (Twin-Bar Trade-Off Plot)
-Calculates Tier C capacity directly from annual energy (Energy / 8.76).
-Includes dynamic Y-axis scaling and solid number badges.
+Visualizes the economic trade-off between workload capacity and gross revenue.
 
-Updates:
-- Swapped visual hierarchy: Workload Capacity (left) is now wide and solid.
-- Revenue (right) is now narrow, hatched, and semi-transparent.
-- Updated labels to "Workload Capacity (MW)".
-- FIXED OVERLAP: Added mathematical scaling so the Revenue text always sits visually higher than both bars.
+Reads parameter sweep results to determine the optimal workload mix for various 
+firm (Tier A) allocations within a fixed data center capacity. Calculates slack 
+capacity (Tier C) from annual energy balances and generates a dual-axis twin-bar 
+chart. The visualization contrasts physical workload allocation (MW) against 
+financial yield (€), illustrating the impact of workload flexibility on total revenue.
 """
 
 import pandas as pd
@@ -50,23 +49,7 @@ file_path_1 = os.path.join(BASE_FOLDER, f"Feasible_3D_Sweep_Results_99.9pct_IT{C
 file_path_2 = os.path.join(BASE_FOLDER, f"Feasible_3D_Sweep_Results_99.9pct_IT{CAPACITY:.1f}.csv")
 file_path = file_path_1 if os.path.exists(file_path_1) else file_path_2
 
-if not os.path.exists(file_path):
-    print("⚠️ CSV not found. Generating synthetic data...")
-    rows = []
-    for a in range(9):
-        for b1 in range(15):
-            for b2 in range(16):
-                if a*1.5 + b1*1.1 + b2*1.3 <= CAPACITY:
-                    rows.append({
-                        'Tier_A_MW': a, 'Tier_B1_MW': b1, 'Tier_B2_MW': b2, 
-                        'Energy_A_Annual_GWh': a*8.76*0.9, 
-                        'Energy_B1_Annual_GWh': b1*8.76*0.5, 
-                        'Energy_B2_Annual_GWh': b2*8.76*0.3
-                    })
-    df = pd.DataFrame(rows)
-    df['Total_Delivered_Annual_GWh'] = df['Energy_A_Annual_GWh'] + df['Energy_B1_Annual_GWh'] + df['Energy_B2_Annual_GWh'] + (CAPACITY*0.1*8.76)
-else:
-    df = pd.read_csv(file_path)
+df = pd.read_csv(file_path)
 
 # Calculate Tier C Energy (Slack Capacity)
 if 'Energy_C_Annual_GWh' not in df.columns:
@@ -170,8 +153,8 @@ for i, val in enumerate(df_opt['Total_Rev']):
              ha='center', va='bottom', fontsize=10, fontweight='bold', color='#333333')
 
 # --- Formatting & Aesthetics ---
-ax1.set_xlabel("Tier A Capacity (MW)", fontsize=12, fontweight='bold', color='#444444', labelpad=10)
-ax1.set_ylabel("Optimal Workload Mix Composition (MW)", fontsize=12, fontweight='bold', color='#333333')
+ax1.set_xlabel("Tier A Capacity (MW$_{\mathrm{IT}}$)", fontsize=12, fontweight='bold', color='#444444', labelpad=10)
+ax1.set_ylabel("Optimal Workload Mix Composition (MW$_{\mathrm{IT}}$)", fontsize=12, fontweight='bold', color='#333333')
 ax2.set_ylabel("Annual Gross Revenue (Millions €)", fontsize=12, fontweight='bold', color='#333333')
 
 ax1.set_xticks(x)
@@ -187,7 +170,7 @@ legend_elements = [
     mpatches.Patch(facecolor=C_B1, label='Tier B1'),
     mpatches.Patch(facecolor=C_B2, label='Tier B2'),
     mpatches.Patch(facecolor=C_C, label='Tier C'),
-    mpatches.Patch(facecolor='#555555', edgecolor='white', label='Left Bar: Workload Capacity (MW)'),
+    mpatches.Patch(facecolor='#555555', edgecolor='white', label='Left Bar: Workload Capacity (MW$_{\mathrm{IT}}$)'),
     mpatches.Patch(facecolor='#a6acaf', edgecolor='white', hatch=HATCH_REVENUE, alpha=OPACITY_REVENUE, label='Right Bar: Gross Revenue (€)'),
 ]
 
@@ -199,7 +182,4 @@ plt.tight_layout()
 # Save & Show
 save_path = os.path.join(BASE_FOLDER, 'TwinBar_Economic_Optimum_16MW.svg')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
-print("\n" + "=" * 60)
-print(f"✅ Plot calculating Tier C from Energy saved to: {save_path}")
-print("=" * 60)
 plt.show()

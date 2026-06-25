@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Section 3.x / Appendix - End-of-Horizon Sensitivity Analysis
-Evaluates the optimal workload portfolios across various facility sizes with Tier C enabled.
-Visualizes the final Tier B2 queue against the theoretical 1.92% (168-hour) SLA loophole limit.
+Evaluates the end-of-horizon sensitivity of optimal workload portfolios.
+
+Simulates the accumulation of unserved Tier B2 (weekly flexible) workloads 
+over an 8760-hour operational year across varying data center capacities. 
+Generates a visualization comparing the final accumulated queue volume against 
+the theoretical 168-hour (1.92%) Service Level Agreement (SLA) boundary limit.
 """
 
 import os
@@ -105,9 +109,7 @@ results_limit_mwh = []
 results_pct_hidden = []
 labels = []
 
-print("=" * 70)
 print(f"{'Portfolio':<10} | {'DC Size':<8} | {'Final Queue':<12} | {'SLA Limit':<12} | {'% Hidden'}")
-print("-" * 70)
 
 for idx, port in enumerate(portfolios):
     print(f"Running {port['name']}...", end="\r")
@@ -129,7 +131,6 @@ for idx, port in enumerate(portfolios):
     
     print(f"{port['name']:<10} | {port['Total']:<5} MW | {final_q_b2:>8.1f} MWh | {sla_limit_mwh:>8.1f} MWh | {pct_hidden:>6.2f}%")
 
-print("=" * 70)
 
 # =============================================================================
 # 4. PLOT BAR CHART 
@@ -139,9 +140,6 @@ width = 0.55
 
 fig, ax = plt.subplots(figsize=(8.5, 5), facecolor='white')
 
-# Plot 1: The Hollow "Theoretical Limit" Outline (1.92% of Annual Load)
-# rects_limit = ax.bar(x, results_limit_mwh, width, color='none', edgecolor=C_LIMIT, 
-#                      linewidth=1.5, linestyle='--', label='Theoretical Maximum Loophole (1.92% Annual Load)')
 
 # Plot 2: The Solid "Actual Final Queue"
 rects_actual = ax.bar(x, results_actual_queue, width, color=C_B2, alpha=0.85, 
@@ -181,7 +179,5 @@ for i, rect in enumerate(rects_actual):
 ax.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=1, frameon=False)
 
 plt.tight_layout()
-if SAVE_PLOTS: 
-    plt.savefig(os.path.join(current_dir, "EMSplot_Sensitivity_FinalQueues_exclC.svg"), bbox_inches='tight')
-print("\n✅ Saved plot as EMSplot_Sensitivity_FinalQueues.svg")
+plt.savefig(os.path.join(current_dir, "EMSplot_Sensitivity_FinalQueues_exclC.svg"), bbox_inches='tight')
 plt.show()

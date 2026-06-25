@@ -1,31 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Section 3.7 - Fast LDC Post-Processing
-Reads the previously saved 'Yearly_Operation_XXMW.csv' chronological data
-and generates high-contrast Load Duration Curves in seconds.
+Generates high-contrast Load Duration Curves (LDC) from chronological operation data.
 
-Updates:
-- Legend labels simplified to just the tier names (e.g., "Tier A").
-- Legend border removed for a cleaner look.
-- Legend dynamically ordered strictly from A -> B1 -> B2 -> C.
-- Fixed right-axis text collision specifically for the 50 MW scenario.
+Reads facility operation CSVs to plot the statistical distribution and realized 
+averages of dispatched workload tiers (A, B1, B2, C) over the simulation year.
 """
-
 import os
 import numpy as np
 import pandas as pd
-#import matplotlib.subplots
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
 # =============================================================================
 # 1. SETUP & PATHS
 # =============================================================================
-# The exact folder where your CSVs are saved
 current_dir = r"C:\Users\thijs\Downloads\hydesign\hydesign\examples\Thesis_ThijsvanWaveren\scripts"
-# os.chdir(current_dir) # Uncomment if running standalone
 
-# The capacities you simulated and saved
 IT_CAPACITIES_MW = [16.0, 20.0, 30.0, 40.0, 50.0, 75.0, 100.0]
 
 # High-Contrast Color Palette for easy distinction
@@ -38,20 +28,11 @@ C_GRID = '#e0e0e0'
 # =============================================================================
 # 2. READ CSV AND PLOT LOOP
 # =============================================================================
-print("\n" + "=" * 80)
-print(" FAST LOAD DURATION CURVE GENERATOR ".center(80))
-print("=" * 80)
 
 for cap_mw in IT_CAPACITIES_MW:
     csv_filename = f'Yearly_Operation_{cap_mw:.0f}MW.csv'
     file_path = os.path.join(current_dir, csv_filename)
-    
-    if not os.path.exists(file_path):
-        print(f"⚠️ Warning: Could not find {csv_filename}. Skipping {cap_mw} MW.")
-        continue
-        
-    print(f"📊 Loading and Plotting {cap_mw} MW Facility...")
-    
+
     # 1. Load Data
     df = pd.read_csv(file_path)
     
@@ -70,7 +51,7 @@ for cap_mw in IT_CAPACITIES_MW:
     x_pct = np.linspace(0, 100, len(df))
 
     # -------------------------------------------------------------------------
-    # 3. PLOTTING THE LDC (Academic-Consulting Style)
+    # 3. PLOTTING THE LDC 
     # -------------------------------------------------------------------------
     fig, ax = plt.subplots(figsize=(10, 6.5), facecolor='white')
 
@@ -101,7 +82,7 @@ for cap_mw in IT_CAPACITIES_MW:
         ax.axhline(avg_c, color=C_C, linestyle='--', linewidth=1.2, alpha=0.8, zorder=2)
 
     # -------------------------------------------------------------------------
-    # Text Annotations (Collision Handling for 50 MW)
+    # Text Annotations 
     # -------------------------------------------------------------------------
     label_x = 101.5 # Push slightly outside the plot box
     
@@ -113,17 +94,17 @@ for cap_mw in IT_CAPACITIES_MW:
         y_pos_c += 1.5
         y_pos_a -= 1.0
         
-    ax.text(label_x, y_pos_a, f'{avg_a:.1f} MW', color=C_A, va='center', fontweight='bold', fontsize=10, clip_on=False)
+    ax.text(label_x, y_pos_a, f'{avg_a:.1f}' + r' MW$_{\mathrm{IT}}$', color=C_A, va='center', fontweight='bold', fontsize=10, clip_on=False)
     
     if avg_b1 > 0.1: 
-        ax.text(label_x, avg_b1, f'{avg_b1:.1f} MW', color=C_B1, va='center', fontweight='bold', fontsize=10, clip_on=False)
+        ax.text(label_x, avg_b1, f'{avg_b1:.1f}' + r' MW$_{\mathrm{IT}}$', color=C_B1, va='center', fontweight='bold', fontsize=10, clip_on=False)
     if avg_b2 > 0.1: 
-        ax.text(label_x, avg_b2, f'{avg_b2:.1f} MW', color=C_B2, va='center', fontweight='bold', fontsize=10, clip_on=False)
+        ax.text(label_x, avg_b2, f'{avg_b2:.1f}' + r' MW$_{\mathrm{IT}}$', color=C_B2, va='center', fontweight='bold', fontsize=10, clip_on=False)
     if avg_c > 0.1: 
-        ax.text(label_x, y_pos_c, f'{avg_c:.1f} MW', color=C_C, va='center', fontweight='bold', fontsize=10, clip_on=False)
+        ax.text(label_x, y_pos_c, f'{avg_c:.1f}' + r' MW$_{\mathrm{IT}}$', color=C_C, va='center', fontweight='bold', fontsize=10, clip_on=False)
 
     # Chart Formatting
-    ax.set_ylabel("Instantaneous Hardware Capacity (MW)", fontsize=12, fontweight='bold', color='#444444')
+    ax.set_ylabel("Instantaneous Hardware Capacity (MW$_{\mathrm{IT}}$)", fontsize=12, fontweight='bold', color='#444444')
     ax.set_xlabel("Percentage of the Year (%)", fontsize=12, fontweight='bold', color='#444444')
 
     ax.set_xlim(0, 100)
@@ -139,9 +120,6 @@ for cap_mw in IT_CAPACITIES_MW:
     ax.spines['bottom'].set_linewidth(1.5)
     ax.spines['bottom'].set_color('#555555')
 
-    # -------------------------------------------------------------------------
-    # Explicit Legend Ordering (A -> B1 -> B2 -> C)
-    # -------------------------------------------------------------------------
     ordered_keys = ['Tier A', 'Tier B1', 'Tier B2', 'Tier C']
     final_handles = []
     final_labels = []
@@ -162,8 +140,4 @@ for cap_mw in IT_CAPACITIES_MW:
     # Save & Show in IDE
     svg_filename = os.path.join(current_dir, f'Thesis_LDC_{cap_mw:.0f}MW.svg')
     plt.savefig(svg_filename, dpi=300, bbox_inches='tight')
-    # plt.show() 
-
-print("\n" + "=" * 80)
-print(" All plots generated successfully! ")
-print("=" * 80)
+    plt.show() 
